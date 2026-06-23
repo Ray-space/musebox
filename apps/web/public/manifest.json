@@ -1,0 +1,16 @@
+{
+  "name": "MuseBox灵感音匣",
+  "short_name": "灵感音匣",
+  "description": "把日常瞬间交给音乐回应",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07050f",
+  "theme_color": "#07050f",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
