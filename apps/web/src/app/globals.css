@@ -3827,11 +3827,23 @@ body {
 }
 
 .reveal-actions {
+  position: relative;
+  z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
   margin-top: 2rem;
+  pointer-events: auto;
+}
+
+.reveal-actions-hint {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgba(107, 95, 128, 0.5);
 }
 
 .reveal-actions > span {

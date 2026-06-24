@@ -24,16 +24,19 @@ const STRATEGY_GLOW: Record<Strategy, string> = {
   serendipity: "from-indigo-300/16 via-violet-200/10 to-transparent",
 };
 
+const PRELOAD_REF_RETRY_MAX = 12;
+
 export function OpenReveal({ data }: OpenRevealProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<"opening" | "revealed">("opening");
   const [cardUrl, setCardUrl] = useState(data.visualCardDataUrl);
-  const [cardLoading, setCardLoading] = useState(!data.visualCardDataUrl);
+  const [cardLoading, setCardLoading] = useState(false);
   const [cardEntered, setCardEntered] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [saved, setSaved] = useState(false);
   const [savingCard, setSavingCard] = useState(false);
+  const [savingCalendar, setSavingCalendar] = useState(false);
 
   const isCurated = Boolean(data.isCurated);
   const boxCopy = data.boxCopy || data.openCopy[0];
@@ -107,26 +110,35 @@ export function OpenReveal({ data }: OpenRevealProps) {
   );
 
   useEffect(() => {
-    if (phase !== "revealed" || !cardEntered || !cardRef.current) return;
+    if (phase !== "revealed" || !cardEntered) return;
 
     let cancelled = false;
-    setCardLoading(true);
 
-    const timer = window.setTimeout(() => {
+    const runPreload = (attempt = 0) => {
+      if (cancelled) return;
+
       const element = cardRef.current;
-      if (!element || cancelled) return;
+      if (!element) {
+        if (attempt < PRELOAD_REF_RETRY_MAX) {
+          requestAnimationFrame(() => runPreload(attempt + 1));
+        }
+        return;
+      }
 
+      setCardLoading(true);
       captureLyricCard(element, { album: albumCaptureData })
         .then((url) => {
-          if (!cancelled) {
-            setCardUrl(url);
-            setCardLoading(false);
-          }
+          if (!cancelled) setCardUrl(url);
         })
         .catch(() => {
+          // best-effort preload; click handlers will retry
+        })
+        .finally(() => {
           if (!cancelled) setCardLoading(false);
         });
-    }, isCurated ? 200 : 480);
+    };
+
+    const timer = window.setTimeout(() => runPreload(), isCurated ? 200 : 480);
 
     return () => {
       cancelled = true;
@@ -135,7 +147,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
   }, [phase, cardEntered, captureKey, isCurated, albumCaptureData]);
 
   const ensureCardUrl = useCallback(async (): Promise<string> => {
-    if (cardUrl && !cardLoading) return cardUrl;
+    if (cardUrl?.trim()) return cardUrl;
 
     const element = cardRef.current;
     if (!element) {
@@ -147,14 +159,14 @@ export function OpenReveal({ data }: OpenRevealProps) {
       album: albumCaptureData,
     });
     setCardUrl(captured);
-    setCardLoading(false);
     return captured;
-  }, [albumCaptureData, cardLoading, cardUrl]);
+  }, [albumCaptureData, cardUrl]);
 
   const handleSaveCalendar = async () => {
+    setSavingCalendar(true);
     try {
       const url = await ensureCardUrl();
-      saveCalendarEntry({
+      const ok = saveCalendarEntry({
         id: uuidv4(),
         date: formatToday(),
         momentText: data.momentText,
@@ -167,9 +179,15 @@ export function OpenReveal({ data }: OpenRevealProps) {
         audioUrl: playbackSrc,
         genre: data.song.genre,
       });
+      if (!ok) {
+        window.alert("收藏失败，本地存储空间不足，请清理浏览器数据后重试");
+        return;
+      }
       setSaved(true);
     } catch {
       window.alert("歌词卡生成失败，请稍后再试");
+    } finally {
+      setSavingCalendar(false);
     }
   };
 
@@ -187,6 +205,8 @@ export function OpenReveal({ data }: OpenRevealProps) {
       setSavingCard(false);
     }
   };
+
+  const actionBusy = savingCard || savingCalendar;
 
   return (
     <div className="w-full">
@@ -279,19 +299,26 @@ export function OpenReveal({ data }: OpenRevealProps) {
               transition={{ delay: 0.85, duration: 0.8 }}
               className="reveal-actions"
             >
+              {cardLoading && (
+                <p className="reveal-actions-hint shimmer-text">正在预生成歌词卡…</p>
+              )}
               <button
                 type="button"
                 onClick={() => void handleSaveCalendar()}
-                disabled={saved || cardLoading}
+                disabled={saved || actionBusy}
                 className="reveal-action-btn"
               >
-                {saved ? "已收藏" : "收藏到日历"}
+                {savingCalendar
+                  ? "收藏中…"
+                  : saved
+                    ? "已收藏"
+                    : "收藏到日历"}
               </button>
               <span className="text-dream-mist/20">·</span>
               <button
                 type="button"
-                onClick={handleSaveLyricCard}
-                disabled={savingCard || cardLoading}
+                onClick={() => void handleSaveLyricCard()}
+                disabled={actionBusy}
                 className="reveal-action-btn"
               >
                 {savingCard ? "正在生成歌词卡…" : "保存歌词卡"}

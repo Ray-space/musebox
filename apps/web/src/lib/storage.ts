@@ -166,8 +166,8 @@ export function getCalendarByMonth(month: string): CalendarEntry[] {
   return getCalendarEntriesSorted().filter((entry) => entry.date.startsWith(month));
 }
 
-export function saveCalendarEntry(entry: CalendarEntry) {
-  if (typeof window === "undefined") return;
+export function saveCalendarEntry(entry: CalendarEntry): boolean {
+  if (typeof window === "undefined") return false;
   const entries = getCalendarEntries().filter((item) => item.id !== entry.id);
 
   const safeEntry: CalendarEntry = {
@@ -189,18 +189,25 @@ export function saveCalendarEntry(entry: CalendarEntry) {
     try {
       localStorage.setItem(CALENDAR_KEY, JSON.stringify(trimmed));
     } catch {
-      localStorage.setItem(
-        CALENDAR_KEY,
-        JSON.stringify(
-          trimmed.slice(0, 15).map((item) => ({
-            ...item,
-            visualCardDataUrl: "",
-            imageDataUrl: undefined,
-          })),
-        ),
-      );
+      try {
+        localStorage.setItem(
+          CALENDAR_KEY,
+          JSON.stringify(
+            trimmed.slice(0, 15).map((item) => ({
+              ...item,
+              visualCardDataUrl: "",
+              imageDataUrl: undefined,
+            })),
+          ),
+        );
+      } catch {
+        return false;
+      }
     }
   }
+
+  const saved = getCalendarEntries().find((item) => item.id === safeEntry.id);
+  return Boolean(saved?.visualCardDataUrl?.trim());
 }
 
 export function deleteCalendarEntry(id: string) {

@@ -177,6 +177,21 @@ async function waitForFonts() {
   }
 }
 
+const DOM_CAPTURE_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  message: string,
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), ms);
+    }),
+  ]);
+}
+
 async function captureLyricCardDom(
   element: HTMLElement,
   pixelRatio: number,
@@ -185,24 +200,30 @@ async function captureLyricCardDom(
   element.setAttribute("data-capturing", "true");
 
   try {
-    await waitForFonts();
-    await waitForImages(element);
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    return await withTimeout(
+      (async () => {
+        await waitForFonts();
+        await waitForImages(element);
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
 
-    return await toPng(element, {
-      pixelRatio,
-      cacheBust: true,
-      skipAutoScale: true,
-      width: LYRIC_CARD_WIDTH,
-      height: LYRIC_CARD_HEIGHT,
-      style: {
-        width: `${LYRIC_CARD_WIDTH}px`,
-        height: `${LYRIC_CARD_HEIGHT}px`,
-        margin: "0",
-        transform: "none",
-      },
-    });
+        return toPng(element, {
+          pixelRatio,
+          cacheBust: true,
+          skipAutoScale: true,
+          width: LYRIC_CARD_WIDTH,
+          height: LYRIC_CARD_HEIGHT,
+          style: {
+            width: `${LYRIC_CARD_WIDTH}px`,
+            height: `${LYRIC_CARD_HEIGHT}px`,
+            margin: "0",
+            transform: "none",
+          },
+        });
+      })(),
+      DOM_CAPTURE_TIMEOUT_MS,
+      "歌词卡截图超时",
+    );
   } finally {
     element.classList.remove("art-lyric-card--capture");
     element.removeAttribute("data-capturing");
