@@ -1,6 +1,7 @@
 import type { CalendarEntry, DrawResult, MomentAnalysis, MomentSource } from "@/types";
 
 const CALENDAR_KEY = "music-blindbox-calendar";
+const MAX_CALENDAR_ENTRIES = 20;
 const SESSION_KEY = "music-blindbox-session";
 const IMAGE_KEY = "music-blindbox-image";
 const SELECTED_KEY = "music-blindbox-selected";
@@ -172,32 +173,42 @@ export function saveCalendarEntry(entry: CalendarEntry): boolean {
 
   const safeEntry: CalendarEntry = {
     ...entry,
-    visualCardDataUrl: entry.visualCardDataUrl.slice(0, 500000),
-    imageDataUrl: entry.imageDataUrl?.slice(0, 300000),
+    imageDataUrl: entry.visualCardDataUrl?.trim()
+      ? undefined
+      : entry.imageDataUrl,
   };
 
   entries.unshift(safeEntry);
 
+  const persist = (list: CalendarEntry[]) => {
+    localStorage.setItem(
+      CALENDAR_KEY,
+      JSON.stringify(list.slice(0, MAX_CALENDAR_ENTRIES)),
+    );
+  };
+
   try {
-    localStorage.setItem(CALENDAR_KEY, JSON.stringify(entries.slice(0, 50)));
+    persist(entries);
   } catch {
-    const trimmed = entries.slice(0, 30).map((item, index) =>
-      index > 5
-        ? { ...item, visualCardDataUrl: "", imageDataUrl: undefined }
+    const trimmed = entries.slice(0, 12).map((item, index) =>
+      index > 2
+        ? { ...item, audioDataUrl: undefined, imageDataUrl: undefined }
         : item,
     );
     try {
-      localStorage.setItem(CALENDAR_KEY, JSON.stringify(trimmed));
+      persist(trimmed);
     } catch {
       try {
-        localStorage.setItem(
-          CALENDAR_KEY,
-          JSON.stringify(
-            trimmed.slice(0, 15).map((item) => ({
-              ...item,
-              visualCardDataUrl: "",
-              imageDataUrl: undefined,
-            })),
+        persist(
+          trimmed.slice(0, 8).map((item, index) =>
+            index > 0
+              ? {
+                  ...item,
+                  audioDataUrl: undefined,
+                  visualCardDataUrl: "",
+                  imageDataUrl: undefined,
+                }
+              : item,
           ),
         );
       } catch {
@@ -207,7 +218,10 @@ export function saveCalendarEntry(entry: CalendarEntry): boolean {
   }
 
   const saved = getCalendarEntries().find((item) => item.id === safeEntry.id);
-  return Boolean(saved?.visualCardDataUrl?.trim());
+  if (!saved) return false;
+  return Boolean(
+    saved.visualCardDataUrl?.trim() || saved.imageDataUrl?.trim(),
+  );
 }
 
 export function deleteCalendarEntry(id: string) {
@@ -235,7 +249,7 @@ export function updateCalendarEntryJournal(id: string, journal: string) {
   };
 
   try {
-    localStorage.setItem(CALENDAR_KEY, JSON.stringify(next.slice(0, 50)));
+    localStorage.setItem(CALENDAR_KEY, JSON.stringify(next.slice(0, MAX_CALENDAR_ENTRIES)));
   } catch {
     // keep existing entries if quota exceeded
   }

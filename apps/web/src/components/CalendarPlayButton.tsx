@@ -25,6 +25,13 @@ export function CalendarPlayButton({
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    audio.src = audioUrl;
+    audio.load();
+  }, [audioUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (!isActive) {
       audio.pause();
@@ -43,16 +50,25 @@ export function CalendarPlayButton({
     }
 
     try {
+      if (audio.error) {
+        throw new Error("audio error");
+      }
       await audio.play();
       onToggle(true);
     } catch {
+      window.alert("音频无法播放，请重新开盒生成");
       onToggle(false);
     }
   };
 
   return (
     <>
-      <audio ref={audioRef} src={audioUrl} preload="none" aria-hidden />
+      <audio
+        ref={audioRef}
+        preload="none"
+        aria-hidden
+        onError={() => onToggle(false)}
+      />
       <button
         type="button"
         className={[

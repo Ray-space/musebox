@@ -8,6 +8,7 @@ import { BoxOpenAnimation } from "@/components/BoxOpenAnimation";
 import { splitDisplayLyrics } from "@/lib/mood-engine";
 import { assignDefaultSections, buildLyricStartFractions } from "@/lib/lyric-sync";
 import { buildMoodIntro } from "@/lib/lyric-card-context";
+import { compressDataUrlForCalendar } from "@/lib/calendar-thumb";
 import { captureLyricCard, downloadDataUrl } from "@/lib/visual-card";
 import { resolvePlaybackSrc } from "@/lib/resolve-audio-src";
 import { formatToday, saveCalendarEntry } from "@/lib/storage";
@@ -166,6 +167,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
     setSavingCalendar(true);
     try {
       const url = await ensureCardUrl();
+      const thumbUrl = await compressDataUrlForCalendar(url);
       const ok = saveCalendarEntry({
         id: uuidv4(),
         date: formatToday(),
@@ -174,9 +176,10 @@ export function OpenReveal({ data }: OpenRevealProps) {
         songTitle: data.song.title,
         songArtist: data.song.artist,
         strategy: data.song.strategy,
-        visualCardDataUrl: url,
+        visualCardDataUrl: thumbUrl,
         imageDataUrl: data.imageDataUrl,
-        audioUrl: playbackSrc,
+        audioUrl: data.song.audioUrl,
+        audioDataUrl: data.song.audioDataUrl,
         genre: data.song.genre,
       });
       if (!ok) {

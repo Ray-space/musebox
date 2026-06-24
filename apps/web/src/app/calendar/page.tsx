@@ -14,6 +14,7 @@ import {
   getCalendarByMonth,
   getCalendarEntriesSorted,
 } from "@/lib/storage";
+import { resolveCalendarPlayback } from "@/lib/resolve-audio-src";
 import type { CalendarEntry } from "@/types";
 import { STRATEGY_LABELS } from "@/types";
 
@@ -30,7 +31,7 @@ function buildMonthOptions() {
 }
 
 function entryThumb(entry: CalendarEntry) {
-  return entry.visualCardDataUrl?.trim() || "";
+  return entry.visualCardDataUrl?.trim() || entry.imageDataUrl?.trim() || "";
 }
 
 function CalendarEntryCard({
@@ -47,6 +48,7 @@ function CalendarEntryCard({
   onDelete: (entryId: string) => void;
 }) {
   const thumb = entryThumb(entry);
+  const playbackSrc = resolveCalendarPlayback(entry);
 
   return (
     <div className="glass calendar-entry-card rounded-3xl p-4">
@@ -61,9 +63,9 @@ function CalendarEntryCard({
           ) : (
             <div className="calendar-entry-thumb-placeholder h-24 w-20 rounded-2xl" />
           )}
-          {entry.audioUrl && (
+          {playbackSrc && (
             <CalendarPlayButton
-              audioUrl={entry.audioUrl}
+              audioUrl={playbackSrc}
               strategy={entry.strategy}
               genre={entry.genre ?? "pop"}
               songTitle={entry.songTitle}
@@ -231,6 +233,7 @@ export default function CalendarPage() {
             const key = String(day).padStart(2, "0");
             const entry = entryMap.get(key);
             const thumb = entry ? entryThumb(entry) : "";
+            const playbackSrc = entry ? resolveCalendarPlayback(entry) : "";
 
             return (
               <div
@@ -245,9 +248,9 @@ export default function CalendarPage() {
                     ) : (
                       <div className="calendar-entry-thumb-placeholder calendar-thumb-placeholder" />
                     )}
-                    {entry.audioUrl && (
+                    {playbackSrc && (
                       <CalendarPlayButton
-                        audioUrl={entry.audioUrl}
+                        audioUrl={playbackSrc}
                         strategy={entry.strategy}
                         genre={entry.genre ?? "pop"}
                         songTitle={entry.songTitle}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { downloadDataUrl } from "@/lib/visual-card";
+import { resolveCalendarPlayback } from "@/lib/resolve-audio-src";
 import type { CalendarEntry } from "@/types";
 
 interface CalendarEntryMenuProps {
@@ -63,13 +64,19 @@ function saveEntryLyricCard(entry: CalendarEntry) {
 }
 
 async function saveEntrySong(entry: CalendarEntry) {
-  if (!entry.audioUrl?.trim()) {
+  const src = resolveCalendarPlayback(entry);
+  if (!src) {
     window.alert("暂无音频文件。");
     return;
   }
 
+  if (src.startsWith("data:")) {
+    downloadDataUrl(src, `MuseBox灵感音匣-${entry.songTitle}.mp3`);
+    return;
+  }
+
   try {
-    const response = await fetch(entry.audioUrl);
+    const response = await fetch(src);
     if (!response.ok) throw new Error("fetch failed");
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
@@ -79,7 +86,7 @@ async function saveEntrySong(entry: CalendarEntry) {
     link.click();
     URL.revokeObjectURL(objectUrl);
   } catch {
-    window.alert("暂无音频文件。");
+    window.alert("音频无法下载，请重新开盒生成");
   }
 }
 

@@ -128,6 +128,8 @@ export interface CalendarEntry {
   visualCardDataUrl: string;
   imageDataUrl?: string;
   audioUrl: string;
+  /** 内联音频，日历回放优先（避免 /api/audio 跨实例 404） */
+  audioDataUrl?: string;
   genre?: string;
   journal?: string;
   journalUpdatedAt?: string;
