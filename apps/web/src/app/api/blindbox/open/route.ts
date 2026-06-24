@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
         imagery_keywords: analysis.imagery,
         scene_tags: analysis.scene_tags,
         audioUrl: generated.audioUrl,
+        audioDataUrl: generated.audioDataUrl,
         openCopy,
         story: `根据「${analysis.summary}」实时生成`,
         source: "generated",

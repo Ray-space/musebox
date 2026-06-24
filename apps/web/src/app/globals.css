@@ -3230,7 +3230,8 @@ body {
   position: absolute;
   right: 1rem;
   bottom: 1rem;
-  z-index: 40;
+  z-index: 50;
+  pointer-events: auto;
 }
 
 .reveal-card-frame {
@@ -4321,10 +4322,43 @@ body {
   position: absolute;
   right: 0.25rem;
   bottom: 0;
-  z-index: 5;
+  z-index: 50;
+  pointer-events: auto;
   transform: scale(0.68);
   transform-origin: 100% 100%;
-  opacity: 0.72;
+  opacity: 1;
+}
+
+.reveal-player-error {
+  position: absolute;
+  left: 50%;
+  bottom: -2.4rem;
+  z-index: 60;
+  width: max-content;
+  max-width: 12rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.65rem;
+  background: rgba(24, 16, 36, 0.88);
+  color: rgba(252, 231, 243, 0.92);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.reveal-music-loading {
+  display: block;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.92);
+  animation: reveal-spin 0.85s linear infinite;
+}
+
+@keyframes reveal-spin {
+  to { transform: rotate(360deg); }
 }
 
 .reveal-card-media:has(.art-lyric-card--album) {

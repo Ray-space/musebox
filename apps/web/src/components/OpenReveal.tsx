@@ -8,6 +8,7 @@ import { BoxOpenAnimation } from "@/components/BoxOpenAnimation";
 import { splitDisplayLyrics } from "@/lib/mood-engine";
 import { buildMoodIntro } from "@/lib/lyric-card-context";
 import { captureLyricCard, downloadDataUrl } from "@/lib/visual-card";
+import { resolvePlaybackSrc } from "@/lib/resolve-audio-src";
 import { formatToday, saveCalendarEntry } from "@/lib/storage";
 import type { BlindBox, OpenResult, Strategy } from "@/types";
 import { v4 as uuidv4 } from "uuid";
@@ -36,6 +37,10 @@ export function OpenReveal({ data }: OpenRevealProps) {
   const isCurated = Boolean(data.isCurated);
   const boxCopy = data.boxCopy || data.openCopy[0];
   const hasPhoto = Boolean(data.imageDataUrl);
+  const playbackSrc = useMemo(
+    () => resolvePlaybackSrc(data.song),
+    [data.song],
+  );
 
   const lyrics = useMemo(() => {
     if (isCurated && data.displayLyrics?.length) {
@@ -133,7 +138,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
       strategy: data.song.strategy,
       visualCardDataUrl: cardUrl || "",
       imageDataUrl: data.imageDataUrl,
-      audioUrl: data.song.audioUrl,
+      audioUrl: playbackSrc,
       genre: data.song.genre,
     });
     setSaved(true);
@@ -217,7 +222,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
 
                   {!hasPhoto && (
                     <AudioPlayer
-                      src={data.song.audioUrl || ""}
+                      src={playbackSrc}
                       genre={data.song.genre}
                       strategy={data.song.strategy}
                       songTitle={data.song.title}
@@ -236,7 +241,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
 
               {hasPhoto && (
                 <AudioPlayer
-                  src={data.song.audioUrl || ""}
+                  src={playbackSrc}
                   genre={data.song.genre}
                   strategy={data.song.strategy}
                   songTitle={data.song.title}

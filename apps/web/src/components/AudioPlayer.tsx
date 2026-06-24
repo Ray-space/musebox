@@ -36,6 +36,39 @@ interface AudioPlayerProps {
   onAudioProgress?: (progress: number) => void;
 }
 
+function waitForAudioReady(audio: HTMLAudioElement, timeoutMs = 12_000): Promise<void> {
+  if (audio.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("音频加载超时，请重新开盒"));
+    }, timeoutMs);
+
+    const onReady = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onError = () => {
+      cleanup();
+      reject(new Error("音频加载失败，请重新开盒"));
+    };
+
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      audio.removeEventListener("canplaythrough", onReady);
+      audio.removeEventListener("error", onError);
+    };
+
+    audio.addEventListener("canplaythrough", onReady, { once: true });
+    audio.addEventListener("error", onError, { once: true });
+    audio.load();
+  });
+}
+
 export function AudioPlayer({
   src,
   genre,
@@ -53,6 +86,8 @@ export function AudioPlayer({
   const resolvedVariant = variant ?? (compact ? "compact" : "default");
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [playbackError, setPlaybackError] = useState("");
   const [useSynth, setUseSynth] = useState(false);
   const synthRef = useRef<{
     ctx: AudioContext;
@@ -73,16 +108,26 @@ export function AudioPlayer({
   const shouldAllowSynthFallback = !src || src.startsWith("demo://");
 
   useEffect(() => {
+    setPlaybackError("");
+    setUseSynth(false);
+    notifiedRef.current = false;
+  }, [src]);
+
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio || useSynth) return;
 
-    const onPlay = () => notifyPlaying(true);
+    const onPlay = () => {
+      setPlaybackError("");
+      notifyPlaying(true);
+    };
     const onPause = () => notifyPlaying(false);
     const onError = () => {
       if (shouldAllowSynthFallback) {
         setUseSynth(true);
       } else {
         notifyPlaying(false);
+        setPlaybackError("音频无法播放，请重新开盒");
       }
     };
     const onTimeUpdate = () => {
@@ -100,6 +145,8 @@ export function AudioPlayer({
       audio.play().catch(() => {
         if (shouldAllowSynthFallback) {
           setUseSynth(true);
+        } else {
+          setPlaybackError("自动播放失败，请点击播放按钮");
         }
       });
     }
@@ -127,6 +174,7 @@ export function AudioPlayer({
     gain.connect(ctx.destination);
     osc.start();
     synthRef.current = { ctx, osc, gain };
+    setPlaybackError("");
     notifyPlaying(true);
   };
 
@@ -146,31 +194,58 @@ export function AudioPlayer({
       }
       return;
     }
+
     const audio = audioRef.current;
     if (!audio) return;
+
     if (audio.paused) {
+      if (!src) {
+        setPlaybackError("暂无音频，请重新开盒");
+        return;
+      }
+
+      setLoading(true);
+      setPlaybackError("");
+
       try {
+        await waitForAudioReady(audio);
         await audio.play();
-      } catch {
+      } catch (error) {
+        notifyPlaying(false);
         if (shouldAllowSynthFallback) {
           setUseSynth(true);
           startSynth();
+        } else {
+          setPlaybackError(
+            error instanceof Error ? error.message : "播放失败，请重新开盒",
+          );
         }
+      } finally {
+        setLoading(false);
       }
-    } else {
-      audio.pause();
+      return;
     }
+
+    audio.pause();
   };
+
+  const errorHint =
+    playbackError && !useSynth ? (
+      <p className="reveal-player-error" role="alert">
+        {playbackError}
+      </p>
+    ) : null;
 
   if (!visible) return null;
 
   if (resolvedVariant === "corner") {
     return (
       <div className={`reveal-player-corner ${playing ? "is-playing" : ""} ${className}`}>
-        <audio ref={audioRef} src={src} preload="metadata" loop />
+        <audio ref={audioRef} src={src} preload="auto" loop />
         <button
           type="button"
           onClick={toggle}
+          disabled={loading}
           aria-label={playing ? "暂停音乐" : "播放音乐"}
           className={`reveal-corner-btn ${playing ? "is-playing" : ""}`}
         >
@@ -183,6 +258,7 @@ export function AudioPlayer({
             <span className="reveal-play-icon" aria-hidden />
           )}
         </button>
+        {errorHint}
       </div>
     );
   }
@@ -190,7 +266,7 @@ export function AudioPlayer({
   if (resolvedVariant === "floating") {
     return (
       <div className={`reveal-player ${playing ? "is-playing" : ""} ${className}`}>
-        <audio ref={audioRef} src={src} preload="metadata" loop />
+        <audio ref={audioRef} src={src} preload="auto" loop />
 
         {playing && (
           <div className="reveal-cd-arm" aria-hidden>
@@ -201,10 +277,14 @@ export function AudioPlayer({
         <button
           type="button"
           onClick={toggle}
+          disabled={loading}
           aria-label={playing ? "暂停音乐" : "播放音乐"}
+          aria-busy={loading}
           className={`reveal-music-btn ${playing ? "is-playing" : ""}`}
         >
-          {playing ? (
+          {loading ? (
+            <span className="reveal-music-loading" aria-hidden />
+          ) : playing ? (
             <span className="reveal-vinyl-disc is-spinning" aria-hidden>
               <span className="reveal-vinyl-grooves" />
               <span className="reveal-vinyl-shine" />
@@ -219,6 +299,7 @@ export function AudioPlayer({
             </span>
           )}
         </button>
+        {errorHint}
       </div>
     );
   }
@@ -226,17 +307,23 @@ export function AudioPlayer({
   if (resolvedVariant === "compact") {
     return (
       <div className="flex flex-col items-center gap-3">
-        <audio ref={audioRef} src={src} preload="metadata" loop />
+        <audio ref={audioRef} src={src} preload="auto" loop />
         <button
           type="button"
           onClick={toggle}
+          disabled={loading}
           className="dream-btn flex h-16 w-16 items-center justify-center rounded-full text-xl text-white shadow-dream-lg"
         >
-          {playing ? "❚❚" : "▶"}
+          {loading ? "…" : playing ? "❚❚" : "▶"}
         </button>
         <p className="text-xs text-dream-mist/50">
-          {playing ? "正在播放 AI 音乐" : "点击播放"}
+          {loading
+            ? "正在加载音频…"
+            : playing
+              ? "正在播放 AI 音乐"
+              : "点击播放"}
         </p>
+        {errorHint}
         {useSynth && playing && (
           <p className="text-[11px] text-dream-mist/35">
             Demo 合成音 · 替换未音 MP3 后可播放完整歌曲
@@ -248,14 +335,15 @@ export function AudioPlayer({
 
   return (
     <div className="glass rounded-3xl p-5">
-      <audio ref={audioRef} src={src} preload="metadata" loop />
+      <audio ref={audioRef} src={src} preload="auto" loop />
       <div className="flex items-center gap-4">
         <button
           type="button"
           onClick={toggle}
+          disabled={loading}
           className="dream-btn flex h-14 w-14 items-center justify-center rounded-full text-white"
         >
-          {playing ? "❚❚" : "▶"}
+          {loading ? "…" : playing ? "❚❚" : "▶"}
         </button>
         <div className="flex-1">
           <div className="h-1.5 overflow-hidden rounded-full bg-dream-purple/20">
@@ -264,11 +352,15 @@ export function AudioPlayer({
             />
           </div>
           <p className="mt-2 text-xs text-dream-mist/45">
-            {useSynth
-              ? "Demo 合成音（替换为未音导出 MP3 后可播放完整歌曲）"
-              : playing
-                ? "正在播放"
-                : "点击播放"}
+            {playbackError
+              ? playbackError
+              : useSynth
+                ? "Demo 合成音（替换为未音导出 MP3 后可播放完整歌曲）"
+                : loading
+                  ? "正在加载音频…"
+                  : playing
+                    ? "正在播放"
+                    : "点击播放"}
           </p>
         </div>
       </div>

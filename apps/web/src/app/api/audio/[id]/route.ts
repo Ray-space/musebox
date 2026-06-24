@@ -1,4 +1,4 @@
-import { readGeneratedAudio } from "@/lib/generated-audio-cache";
+import { resolveGeneratedAudio } from "@/lib/generated-audio-cache";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -6,7 +6,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const buffer = readGeneratedAudio(id);
+  const buffer = await resolveGeneratedAudio(id);
   if (!buffer) {
     return NextResponse.json({ error: "音频不存在或已过期" }, { status: 404 });
   }

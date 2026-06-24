@@ -18,6 +18,8 @@ export interface MiniMaxMusicOptions {
 
 export interface MiniMaxMusicResult {
   audioUrl: string;
+  audioDataUrl: string;
+  cacheId: string;
   fileName: string;
   prompt: string;
 }
@@ -132,6 +134,8 @@ export async function generateMiniMaxMusic(
 
   return {
     audioUrl: `/api/audio/${cacheId}`,
+    audioDataUrl: `data:audio/mpeg;base64,${audioBuffer.toString("base64")}`,
+    cacheId,
     fileName,
     prompt: options.prompt,
   };

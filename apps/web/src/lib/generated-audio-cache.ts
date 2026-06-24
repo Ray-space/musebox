@@ -1,4 +1,6 @@
 import { randomUUID } from "crypto";
+import { readFile } from "fs/promises";
+import path from "path";
 
 interface CachedAudio {
   buffer: Buffer;
@@ -43,4 +45,24 @@ export function readGeneratedAudio(id: string): Buffer | null {
     return null;
   }
   return entry.buffer;
+}
+
+export async function readGeneratedAudioFromDisk(
+  id: string,
+): Promise<Buffer | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  try {
+    const filePath = path.join(process.cwd(), "public", "generated", `${id}.mp3`);
+    return await readFile(filePath);
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveGeneratedAudio(
+  id: string,
+): Promise<Buffer | null> {
+  const cached = readGeneratedAudio(id);
+  if (cached) return cached;
+  return readGeneratedAudioFromDisk(id);
 }

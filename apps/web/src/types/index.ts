@@ -11,6 +11,8 @@ export interface Song {
   imagery_keywords: string[];
   scene_tags: string[];
   audioUrl: string;
+  /** Serverless 部署时随开盒响应内联返回，避免 /api/audio 跨实例 404 */
+  audioDataUrl?: string;
   openCopy: [string, string];
   story: string;
   source?: "generated" | "library";
