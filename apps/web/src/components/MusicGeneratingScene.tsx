@@ -10,6 +10,7 @@ interface MusicGeneratingSceneProps {
   songTitle?: string;
   elapsed: number;
   statusHint: string;
+  stage?: string;
 }
 
 export function MusicGeneratingScene({
@@ -18,8 +19,10 @@ export function MusicGeneratingScene({
   songTitle,
   elapsed,
   statusHint,
+  stage,
 }: MusicGeneratingSceneProps) {
   const title = songTitle || boxCopy;
+  const hint = stage || statusHint;
 
   return (
     <div className={`music-gen-scene music-gen-scene--${strategy}`}>
@@ -39,7 +42,7 @@ export function MusicGeneratingScene({
       <div className="music-gen-text">
         <p className="shimmer-text text-lg">正在生成你的专属音乐</p>
         <p className="music-gen-box-copy">《{title}》</p>
-        <p className="mt-3 max-w-sm text-sm text-ink-muted">{statusHint}</p>
+        <p className="mt-3 max-w-sm text-sm text-ink-muted">{hint}</p>
         <p className="mt-5 text-xs text-ink-soft">
           已等待 {elapsed}s · 请保持页面打开
         </p>

@@ -19,6 +19,15 @@ function getMiniMaxApiBase(): string {
   return base.replace(/\/$/, "");
 }
 
+function getMiniMaxTextTimeoutMs(): number {
+  const raw = process.env.MINIMAX_TEXT_TIMEOUT_MS;
+  if (raw) {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return 30_000;
+}
+
 function getMiniMaxTextModel(): string {
   return process.env.MINIMAX_TEXT_MODEL || "MiniMax-M3";
 }
@@ -71,7 +80,7 @@ async function callMiniMaxChat(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+      signal: AbortSignal.timeout(options.timeoutMs ?? getMiniMaxTextTimeoutMs()),
     });
 
     if (!response.ok) {
@@ -114,7 +123,7 @@ async function callOpenAIChat(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(options.timeoutMs ?? 60_000),
+      signal: AbortSignal.timeout(options.timeoutMs ?? getMiniMaxTextTimeoutMs()),
     });
 
     if (!response.ok) {

@@ -77,6 +77,17 @@ https://<你的项目名>.vercel.app/demo
 
 环境变量同 Vercel（见上表）。仓库根目录也有 Dockerfile（目标目录填 `.` 时使用）。
 
+**云托管异步开盒（必须）**
+
+| 变量 | 值 | 说明 |
+|------|-----|------|
+| `OPEN_ASYNC` | `1` | 异步开盒 + 轮询，避免 60 秒网关超时 |
+| 实例最小副本数 | `1` | 内存 job 存储，避免 poll 打到无任务的实例 |
+
+回退同步行为：设置 `OPEN_ASYNC=0` 后 Redeploy（无需改 Git）。
+
+Vercel 可继续 `OPEN_ASYNC=0`（同步长连接，与改前行为一致），或 `OPEN_ASYNC=1` 配合 `waitUntil` 后台任务。
+
 修改根目录 `content/songs.json` 后，部署前在 `apps/web` 执行：
 
 ```bash
@@ -93,3 +104,9 @@ cd apps/web
 npm run sync:audio
 npm run deploy:competition
 ```
+
+## Git 回退说明
+
+改代码前可打标签：`git tag v-before-async`
+
+日常回退优先用环境变量 **`OPEN_ASYNC=0`** + Redeploy，无需 revert commit。

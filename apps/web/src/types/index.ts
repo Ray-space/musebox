@@ -84,6 +84,39 @@ export interface OpenResult {
   isCurated?: boolean;
 }
 
+/** POST /api/blindbox/open 完整响应（sync 直接返回 / async completed 时 result） */
+export interface OpenApiResponse {
+  boxId: string;
+  boxCopy?: string;
+  openCopy: [string, string];
+  song: Song;
+  momentText?: string;
+  imageDataUrl?: string;
+  displayLyrics?: string[];
+  lyricTimings?: number[];
+  strategy?: Strategy;
+  timbre?: TimbreProfile;
+  musicMode?: MusicMode;
+  generated?: boolean;
+  fallbackReason?: string;
+  isCurated?: boolean;
+}
+
+export type OpenJobStatus = "pending" | "running" | "completed" | "failed";
+
+export interface OpenJobPollResponse {
+  status: OpenJobStatus;
+  stage?: string;
+  progress?: number;
+  error?: string;
+  result?: OpenApiResponse;
+}
+
+export interface OpenAsyncStartResponse {
+  jobId: string;
+  status: "pending";
+}
+
 export interface CalendarEntry {
   id: string;
   date: string;
