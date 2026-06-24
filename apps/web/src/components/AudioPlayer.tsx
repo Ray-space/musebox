@@ -70,13 +70,21 @@ export function AudioPlayer({
     }
   };
 
+  const shouldAllowSynthFallback = !src || src.startsWith("demo://");
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || useSynth) return;
 
     const onPlay = () => notifyPlaying(true);
     const onPause = () => notifyPlaying(false);
-    const onError = () => setUseSynth(true);
+    const onError = () => {
+      if (shouldAllowSynthFallback) {
+        setUseSynth(true);
+      } else {
+        notifyPlaying(false);
+      }
+    };
     const onTimeUpdate = () => {
       if (audio.duration > 0) {
         onAudioProgress?.(audio.currentTime / audio.duration);
@@ -89,7 +97,11 @@ export function AudioPlayer({
     audio.addEventListener("timeupdate", onTimeUpdate);
 
     if (autoPlay) {
-      audio.play().catch(() => setUseSynth(true));
+      audio.play().catch(() => {
+        if (shouldAllowSynthFallback) {
+          setUseSynth(true);
+        }
+      });
     }
 
     return () => {
@@ -98,7 +110,7 @@ export function AudioPlayer({
       audio.removeEventListener("error", onError);
       audio.removeEventListener("timeupdate", onTimeUpdate);
     };
-  }, [autoPlay, useSynth, src, onPlaying, onPlayingChange, onAudioProgress]);
+  }, [autoPlay, useSynth, src, onPlaying, onPlayingChange, onAudioProgress, shouldAllowSynthFallback]);
 
   const startSynth = () => {
     if (synthRef.current) return;
@@ -140,8 +152,10 @@ export function AudioPlayer({
       try {
         await audio.play();
       } catch {
-        setUseSynth(true);
-        startSynth();
+        if (shouldAllowSynthFallback) {
+          setUseSynth(true);
+          startSynth();
+        }
       }
     } else {
       audio.pause();

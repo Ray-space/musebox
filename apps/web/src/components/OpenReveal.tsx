@@ -6,6 +6,7 @@ import { ArtLyricCard } from "@/components/ArtLyricCard";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { BoxOpenAnimation } from "@/components/BoxOpenAnimation";
 import { splitDisplayLyrics } from "@/lib/mood-engine";
+import { buildMoodIntro } from "@/lib/lyric-card-context";
 import { captureLyricCard, downloadDataUrl } from "@/lib/visual-card";
 import { formatToday, saveCalendarEntry } from "@/lib/storage";
 import type { BlindBox, OpenResult, Strategy } from "@/types";
@@ -46,6 +47,17 @@ export function OpenReveal({ data }: OpenRevealProps) {
       data.momentText,
     );
   }, [data.displayLyrics, data.openCopy, data.momentText, isCurated]);
+
+  const albumCaptureData = useMemo(() => {
+    if (!hasPhoto) return undefined;
+    return {
+      imageDataUrl: data.imageDataUrl,
+      songTitle: data.song.title,
+      boxCopy,
+      moodIntro: buildMoodIntro(data.momentText),
+      lyrics,
+    };
+  }, [hasPhoto, data.imageDataUrl, data.song.title, boxCopy, data.momentText, lyrics]);
 
   const displayBox: BlindBox = {
     id: data.boxId,
@@ -92,7 +104,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
       const element = cardRef.current;
       if (!element || cancelled) return;
 
-      captureLyricCard(element)
+      captureLyricCard(element, { album: albumCaptureData })
         .then((url) => {
           if (!cancelled) {
             setCardUrl(url);
@@ -108,7 +120,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [phase, cardEntered, captureKey, isCurated]);
+  }, [phase, cardEntered, captureKey, isCurated, albumCaptureData]);
 
   const handleSaveCalendar = () => {
     saveCalendarEntry({
@@ -136,7 +148,10 @@ export function OpenReveal({ data }: OpenRevealProps) {
 
     setSavingCard(true);
     try {
-      const captured = await captureLyricCard(element, { forShare: true });
+      const captured = await captureLyricCard(element, {
+        forShare: true,
+        album: albumCaptureData,
+      });
       downloadDataUrl(
         captured,
         `MuseBox灵感音匣-${data.song.title}-${Date.now()}.png`,

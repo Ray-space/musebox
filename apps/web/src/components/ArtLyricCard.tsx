@@ -90,7 +90,9 @@ export const ArtLyricCard = forwardRef<HTMLDivElement, ArtLyricCardProps>(
                 alt=""
                 className="art-album-photo-img"
                 draggable={false}
-                crossOrigin="anonymous"
+                {...(imageDataUrl?.startsWith("http")
+                  ? { crossOrigin: "anonymous" as const }
+                  : {})}
               />
               <div className="art-album-photo-fade" aria-hidden />
             </div>

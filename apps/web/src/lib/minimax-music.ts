@@ -1,7 +1,7 @@
+import { storeGeneratedAudio } from "@/lib/generated-audio-cache";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import type { Strategy } from "@/types";
-import { v4 as uuidv4 } from "uuid";
 import { getMusicGenerationTimeoutMs } from "@/lib/music-mode";
 
 export interface MiniMaxMusicOptions {
@@ -115,13 +115,19 @@ export async function generateMiniMaxMusic(
   }
 
   const audioBuffer = Buffer.from(hexAudio, "hex");
-  const fileName = `${uuidv4()}.mp3`;
-  const generatedDir = path.join(process.cwd(), "public", "generated");
-  await mkdir(generatedDir, { recursive: true });
-  await writeFile(path.join(generatedDir, fileName), audioBuffer);
+  const cacheId = storeGeneratedAudio(audioBuffer);
+  const fileName = `${cacheId}.mp3`;
+
+  try {
+    const generatedDir = path.join(process.cwd(), "public", "generated");
+    await mkdir(generatedDir, { recursive: true });
+    await writeFile(path.join(generatedDir, fileName), audioBuffer);
+  } catch (error) {
+    console.warn("[minimax-music] local file write skipped:", error);
+  }
 
   return {
-    audioUrl: `/generated/${fileName}`,
+    audioUrl: `/api/audio/${cacheId}`,
     fileName,
     prompt: options.prompt,
   };
