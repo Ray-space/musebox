@@ -6,7 +6,7 @@ import {
   buildOpenCopyFast,
   splitDisplayLyrics,
 } from "@/lib/mood-engine";
-import { generateMiniMaxMusic } from "@/lib/minimax-music";
+import { generateMiniMaxMusicWithRetry } from "@/lib/minimax-music";
 import {
   getMusicGenerationTimeoutMs,
   getMusicMode,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         box.timbre,
       );
 
-      const generated = await generateMiniMaxMusic({
+      const generated = await generateMiniMaxMusicWithRetry({
         prompt: musicPrompt,
         lyrics: fastLyrics,
         strategy: box.strategy,

@@ -14,8 +14,8 @@ const envPath = resolve(root, ".env.local");
 const COMPETITION_ENV = {
   MINIMAX_API_BASE: "https://api.minimaxi.com",
   MINIMAX_TEXT_MODEL: "MiniMax-M3",
-  MUSIC_MODE: "auto",
-  MUSIC_GENERATION_TIMEOUT_MS: "90000",
+  MUSIC_MODE: "generate",
+  MUSIC_GENERATION_TIMEOUT_MS: "240000",
 };
 
 function parseEnvFile(filePath) {

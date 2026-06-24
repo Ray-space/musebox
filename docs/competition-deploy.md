@@ -27,8 +27,8 @@ npm run deploy:competition
 | `MINIMAX_API_KEY` | 从 `.env.local` 读取 | 图文理解 + 文案 + 生曲 |
 | `MINIMAX_API_BASE` | `https://api.minimaxi.com` | API 地址 |
 | `MINIMAX_TEXT_MODEL` | `MiniMax-M3` | 文本模型 |
-| `MUSIC_MODE` | `auto` | 生曲失败回退曲库 |
-| `MUSIC_GENERATION_TIMEOUT_MS` | `90000` | 90 秒超时，适合评审 |
+| `MUSIC_MODE` | `generate` | 强制 AI 生曲，不回退空曲库 |
+| `MUSIC_GENERATION_TIMEOUT_MS` | `240000` | 4 分钟超时，给 MiniMax 足够生成时间 |
 
 也可手动在 [Vercel Dashboard](https://vercel.com/dashboard) → Project → Settings → Environment Variables 配置，参考 `.env.competition.example`。
 

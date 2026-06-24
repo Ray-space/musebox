@@ -2,7 +2,11 @@ import { storeGeneratedAudio } from "@/lib/generated-audio-cache";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import type { Strategy } from "@/types";
-import { getMusicGenerationTimeoutMs } from "@/lib/music-mode";
+import {
+  getMusicGenerationTimeoutMs,
+  isRetryableMusicError,
+  shouldRetryMusicGeneration,
+} from "@/lib/music-mode";
 
 export interface MiniMaxMusicOptions {
   prompt: string;
@@ -131,4 +135,22 @@ export async function generateMiniMaxMusic(
     fileName,
     prompt: options.prompt,
   };
+}
+
+export async function generateMiniMaxMusicWithRetry(
+  options: MiniMaxMusicOptions,
+): Promise<MiniMaxMusicResult> {
+  const timeoutMs = options.timeoutMs ?? getMusicGenerationTimeoutMs();
+
+  try {
+    return await generateMiniMaxMusic({ ...options, timeoutMs });
+  } catch (firstError) {
+    if (!shouldRetryMusicGeneration() || !isRetryableMusicError(firstError)) {
+      throw firstError;
+    }
+
+    console.warn("[minimax-music] transient error, retrying once:", firstError);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return generateMiniMaxMusic({ ...options, timeoutMs });
+  }
 }

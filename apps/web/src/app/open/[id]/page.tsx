@@ -18,7 +18,7 @@ export default function OpenPage() {
   const [phase, setPhase] = useState<OpenPhase>("generating");
   const [error, setError] = useState("");
   const [elapsed, setElapsed] = useState(0);
-  const [statusHint, setStatusHint] = useState("请保持页面打开，通常需要 60～120 秒");
+  const [statusHint, setStatusHint] = useState("请保持页面打开，AI 生曲通常需要 1～3 分钟");
   const [isCuratedOpen, setIsCuratedOpen] = useState(false);
 
   useEffect(() => {
@@ -53,9 +53,9 @@ export default function OpenPage() {
 
     const longWaitTimer = window.setTimeout(() => {
       if (!forceLibrary) {
-        setStatusHint("仍在生成中，请耐心等待，不要关闭页面");
+        setStatusHint("仍在生成中，请耐心等待，不要关闭页面（最长约 4 分钟）");
       }
-    }, 90_000);
+    }, 120_000);
 
     fetch("/api/blindbox/open", {
       method: "POST",

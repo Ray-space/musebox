@@ -27,3 +27,20 @@ export function getMusicGenerationTimeoutMs(): number {
   if (parsed === 0) return 0;
   return Math.min(parsed, 300_000);
 }
+
+/** 生曲失败时是否允许自动重试一次（仅瞬时网络错误） */
+export function shouldRetryMusicGeneration(): boolean {
+  const raw = process.env.MUSIC_GENERATION_RETRY?.toLowerCase();
+  if (raw === "0" || raw === "false" || raw === "off") return false;
+  return true;
+}
+
+export function isRetryableMusicError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message;
+  if (/timeout|aborted|ECONNRESET|fetch failed|network|socket/i.test(message)) {
+    return true;
+  }
+  if (/MiniMax HTTP 5\d\d/.test(message)) return true;
+  return false;
+}
