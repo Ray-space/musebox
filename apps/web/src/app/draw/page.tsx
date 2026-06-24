@@ -46,7 +46,13 @@ export default function DrawPage() {
     }
 
     const existing = loadSession();
-    if (existing && existing.source !== "curated") {
+    if (existing) {
+      if (existing.source === "curated") {
+        setSession(existing);
+        setStatus("ready");
+        return;
+      }
+
       const needsRefresh =
         existing.boxes.some((box) => !box.songTitle) ||
         existing.boxes.some((box) => !box.timbre) ||

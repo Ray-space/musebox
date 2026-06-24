@@ -207,6 +207,10 @@ export function OpenReveal({ data }: OpenRevealProps) {
   };
 
   const actionBusy = savingCard || savingCalendar;
+  const cardReady = Boolean(cardUrl?.trim()) && !cardLoading;
+
+  const actionBtnClass = (ready: boolean) =>
+    `reveal-action-btn ${ready ? "reveal-action-btn--ready" : "reveal-action-btn--pending"}`;
 
   return (
     <div className="w-full">
@@ -299,14 +303,11 @@ export function OpenReveal({ data }: OpenRevealProps) {
               transition={{ delay: 0.85, duration: 0.8 }}
               className="reveal-actions"
             >
-              {cardLoading && (
-                <p className="reveal-actions-hint shimmer-text">正在预生成歌词卡…</p>
-              )}
               <button
                 type="button"
                 onClick={() => void handleSaveCalendar()}
                 disabled={saved || actionBusy}
-                className="reveal-action-btn"
+                className={actionBtnClass(cardReady && !saved)}
               >
                 {savingCalendar
                   ? "收藏中…"
@@ -319,7 +320,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
                 type="button"
                 onClick={() => void handleSaveLyricCard()}
                 disabled={actionBusy}
-                className="reveal-action-btn"
+                className={actionBtnClass(cardReady)}
               >
                 {savingCard ? "正在生成歌词卡…" : "保存歌词卡"}
               </button>

@@ -3838,14 +3838,6 @@ body {
   pointer-events: auto;
 }
 
-.reveal-actions-hint {
-  width: 100%;
-  margin: 0;
-  text-align: center;
-  font-size: 0.72rem;
-  color: rgba(107, 95, 128, 0.5);
-}
-
 .reveal-actions > span {
   color: rgba(148, 163, 184, 0.45);
 }
@@ -3853,8 +3845,24 @@ body {
 .reveal-action-btn {
   font-size: 0.78rem;
   letter-spacing: 0.1em;
-  color: rgba(107, 95, 128, 0.62);
-  transition: color 0.25s ease;
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.reveal-action-btn--pending {
+  color: rgba(107, 95, 128, 0.32);
+}
+
+.reveal-action-btn--ready {
+  color: rgba(59, 34, 99, 0.88);
+  font-weight: 500;
+}
+
+.reveal-action-btn--ready:hover:not(:disabled) {
+  color: rgba(59, 34, 99, 0.98);
+}
+
+.reveal-action-btn--pending:hover:not(:disabled) {
+  color: rgba(107, 95, 128, 0.52);
 }
 
 .reveal-action-btn:hover:not(:disabled) {
