@@ -10,7 +10,7 @@ interface CalendarEntryMenuProps {
 }
 
 function entryShareImage(entry: CalendarEntry) {
-  return entry.visualCardDataUrl || entry.imageDataUrl || "";
+  return entry.visualCardDataUrl?.trim() || "";
 }
 
 function MoreIcon() {
@@ -26,7 +26,7 @@ function MoreIcon() {
 async function shareEntryImage(entry: CalendarEntry) {
   const imageUrl = entryShareImage(entry);
   if (!imageUrl) {
-    window.alert("暂无歌词卡图片。");
+    window.alert("暂无歌词卡图片，请返回开盒页重新收藏。");
     return;
   }
 
@@ -56,7 +56,7 @@ async function shareEntryImage(entry: CalendarEntry) {
 function saveEntryLyricCard(entry: CalendarEntry) {
   const imageUrl = entryShareImage(entry);
   if (!imageUrl) {
-    window.alert("暂无歌词卡图片。");
+    window.alert("暂无歌词卡图片，请返回开盒页重新收藏。");
     return;
   }
   downloadDataUrl(imageUrl, `MuseBox灵感音匣-${entry.songTitle}-${entry.date}.png`);

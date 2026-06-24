@@ -219,12 +219,16 @@ export async function captureLyricCard(
 ): Promise<string> {
   const pixelRatio = options?.pixelRatio ?? (options?.forShare ? 3 : 2);
 
-  if (options?.album?.imageDataUrl) {
-    await waitForFonts();
-    return renderAlbumLyricCardPng(options.album, pixelRatio);
+  try {
+    return await captureLyricCardDom(element, pixelRatio);
+  } catch (domError) {
+    if (options?.album?.imageDataUrl) {
+      console.warn("[lyric-card] DOM capture failed, fallback to canvas:", domError);
+      await waitForFonts();
+      return renderAlbumLyricCardPng(options.album, pixelRatio);
+    }
+    throw domError;
   }
-
-  return captureLyricCardDom(element, pixelRatio);
 }
 
 export function downloadDataUrl(dataUrl: string, filename: string) {

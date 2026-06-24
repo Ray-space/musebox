@@ -30,7 +30,7 @@ function buildMonthOptions() {
 }
 
 function entryThumb(entry: CalendarEntry) {
-  return entry.imageDataUrl || entry.visualCardDataUrl;
+  return entry.visualCardDataUrl?.trim() || "";
 }
 
 function CalendarEntryCard({

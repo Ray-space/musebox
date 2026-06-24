@@ -1,60 +1,72 @@
-# MuseBox灵感音匣
+# MuseBox 灵感音匣
 
-基于 **VEMUS 未音** 平台的灵感音乐盲盒原型：写+拍 → 抽 → 看+听。
+> 把生活瞬间，变成可以听见的音乐盲盒。
+
+## 我们要解决什么问题
+
+当前 AI 生成音乐普遍存在**互动性与娱乐性不足**的问题，用户留存受限。行业数据显示：
+
+| 指标 | 变化 | 含义 |
+|------|------|------|
+| AI 音乐搜索分 | **+114.7%** | 用户对 AI 音乐仍有强烈探索意愿 |
+| AI 音乐内容分 | **-13%** | 现有体验难以持续激发兴趣，亟需升级 |
+
+概括而言：**探索意愿强，内容体验弱**。AI 音乐需要的不是「再一首能听的歌」，而是更有参与感、惊喜感、可分享的记忆载体。
+
+## 产品思路
+
+MuseBox 以 **「AI 生成音乐 + 盲盒互动」** 切入年轻用户市场。
+
+- **18—30 岁人群**：AI 音乐 TGI 指数低于平均值 100，传统「搜歌 / 生歌」难以打动该群体
+- **同年龄段盲盒 TGI 指数远高于 100**，说明将盲盒机制引入 AI 音乐具备较强产品潜力
+
+MuseBox 基于 AI 生成不同音乐风格的盲盒：用户输入文字或照片 → 抽取专属盲盒 → 开盒获得**专属歌曲 + 视觉歌词卡**，并通过**音乐日历、音匣手记**等附加体验，形成 **「生成 → 记录 → 分享 → 复访」** 闭环，提升用户黏性与商业化潜力。
+
+## 核心体验
+
+**写 + 拍 → 抽 → 看 + 听**
+
+1. **记录瞬间**：用文字或照片描述当下情绪与场景
+2. **抽取盲盒**：同频 · 转场 · 偶遇 三种策略，对应不同音乐气质
+3. **开盒 Reveal**：AI 实时作词 + 生曲，呈现歌词卡与播放器
+4. **留存复访**：收藏到日历、保存歌词卡、音匣手记
 
 ## 快速开始
 
 ```bash
-cd E:\项目\情绪音匣\apps\web
+cd apps/web
 npm install
 npm run dev
 ```
 
 浏览器打开 http://localhost:3000
 
-## 比赛 Demo 部署（固定 2 周链接）
+## 环境变量
 
-```bash
-cd apps/web
-npx vercel login              # 只需一次
-npm run deploy:competition    # 一键构建 + 配置环境变量 + 部署
-```
+复制 `apps/web/.env.example` 为 `apps/web/.env.local`，按需配置：
 
-部署完成后提交：`https://<项目名>.vercel.app/demo`
+- `MINIMAX_API_KEY` — 图文理解、文案与生曲
+- `MUSIC_MODE` — `generate`（强制 AI 生曲）/ `auto`（失败回退曲库）/ `library`
+- `OPEN_ASYNC` — `1` 异步开盒（云托管推荐）/ `0` 同步长连接
 
-详细说明见 [docs/competition-deploy.md](docs/competition-deploy.md)。
+详见 [apps/web/.env.example](apps/web/.env.example)。
+
+## 技术栈
+
+- **前端**：Next.js 15 App Router · PWA
+- **AI 能力**：MiniMax M3（图文理解 / 文案）+ music-2.6（实时生曲）
+- **部署**：支持 Vercel 与 Docker（`apps/web/Dockerfile`）；云托管场景通过 `OPEN_ASYNC=1` 适配 60 秒网关限制
 
 ## 项目结构
 
 ```
 MuseBox灵感音匣/
-├── apps/web/          # Next.js PWA 原型
+├── apps/web/          # Next.js PWA 主应用
 ├── content/           # 曲库元数据 + 音频
-├── docs/              # 产品方案、未音 prompt、答辩材料
+├── docs/              # 产品方案与部署说明
 └── README.md
 ```
 
-## 替换为真实未音歌曲
-
-1. 按 [docs/vemus-prompts.md](docs/vemus-prompts.md) 在未音 App 生成歌曲
-2. 导出 MP3 到 `content/audio/`，文件名与 `content/songs.json` 的 `id` 一致
-3. 复制 MP3 到 `apps/web/public/audio/`
-
-## 可选：LLM 增强
-
-设置环境变量 `OPENAI_API_KEY` 可启用 GPT-4o-mini 多模态情绪分析。
-
-## Plan A：开盒实时生曲（MiniMax）
-
-1. 复制 `apps/web/.env.example` 为 `apps/web/.env.local`
-2. 填入 `OPENAI_API_KEY`、`MINIMAX_API_KEY`
-3. 设置 `MUSIC_MODE=generate`（强制生曲）或 `auto`（失败回退曲库）
-4. 开盒时会调用 MiniMax music-2.6，音频保存在 `public/generated/`
-
-详见 [apps/web/.env.example](apps/web/.env.example)
-
-## 比赛材料
+## 相关文档
 
 - 产品方案：[docs/product-spec.md](docs/product-spec.md)
-- 演示脚本：[docs/demo-video-script.md](docs/demo-video-script.md)
-- 答辩 PPT：[docs/pitch-deck.md](docs/pitch-deck.md)

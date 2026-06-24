@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { getParentPath } from "@/lib/app-navigation";
 
 const NAV = [
   { href: "/", label: "记录" },
@@ -16,7 +17,8 @@ interface AppShellProps {
 export function AppShell({ children, variant = "default" }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const showBack = pathname !== "/";
+  const parentPath = getParentPath(pathname);
+  const showBack = parentPath !== null;
 
   return (
     <>
@@ -50,7 +52,9 @@ export function AppShell({ children, variant = "default" }: AppShellProps) {
             <button
               type="button"
               className="app-back-btn"
-              onClick={() => router.back()}
+              onClick={() => {
+                if (parentPath) router.push(parentPath);
+              }}
             >
               ← 返回上一页
             </button>

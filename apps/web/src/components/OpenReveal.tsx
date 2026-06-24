@@ -134,41 +134,53 @@ export function OpenReveal({ data }: OpenRevealProps) {
     };
   }, [phase, cardEntered, captureKey, isCurated, albumCaptureData]);
 
-  const handleSaveCalendar = () => {
-    saveCalendarEntry({
-      id: uuidv4(),
-      date: formatToday(),
-      momentText: data.momentText,
-      boxCopy,
-      songTitle: data.song.title,
-      songArtist: data.song.artist,
-      strategy: data.song.strategy,
-      visualCardDataUrl: cardUrl || "",
-      imageDataUrl: data.imageDataUrl,
-      audioUrl: playbackSrc,
-      genre: data.song.genre,
+  const ensureCardUrl = useCallback(async (): Promise<string> => {
+    if (cardUrl && !cardLoading) return cardUrl;
+
+    const element = cardRef.current;
+    if (!element) {
+      throw new Error("歌词卡未就绪");
+    }
+
+    const captured = await captureLyricCard(element, {
+      forShare: true,
+      album: albumCaptureData,
     });
-    setSaved(true);
+    setCardUrl(captured);
+    setCardLoading(false);
+    return captured;
+  }, [albumCaptureData, cardLoading, cardUrl]);
+
+  const handleSaveCalendar = async () => {
+    try {
+      const url = await ensureCardUrl();
+      saveCalendarEntry({
+        id: uuidv4(),
+        date: formatToday(),
+        momentText: data.momentText,
+        boxCopy,
+        songTitle: data.song.title,
+        songArtist: data.song.artist,
+        strategy: data.song.strategy,
+        visualCardDataUrl: url,
+        imageDataUrl: data.imageDataUrl,
+        audioUrl: playbackSrc,
+        genre: data.song.genre,
+      });
+      setSaved(true);
+    } catch {
+      window.alert("歌词卡生成失败，请稍后再试");
+    }
   };
 
   const handleSaveLyricCard = async () => {
-    const element = cardRef.current;
-    if (!element) {
-      window.alert("歌词卡生成失败，请稍后再试");
-      return;
-    }
-
     setSavingCard(true);
     try {
-      const captured = await captureLyricCard(element, {
-        forShare: true,
-        album: albumCaptureData,
-      });
+      const captured = await ensureCardUrl();
       downloadDataUrl(
         captured,
         `MuseBox灵感音匣-${data.song.title}-${Date.now()}.png`,
       );
-      setCardUrl(captured);
     } catch {
       window.alert("歌词卡生成失败，请稍后再试");
     } finally {
@@ -269,8 +281,8 @@ export function OpenReveal({ data }: OpenRevealProps) {
             >
               <button
                 type="button"
-                onClick={handleSaveCalendar}
-                disabled={saved}
+                onClick={() => void handleSaveCalendar()}
+                disabled={saved || cardLoading}
                 className="reveal-action-btn"
               >
                 {saved ? "已收藏" : "收藏到日历"}
@@ -279,7 +291,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
               <button
                 type="button"
                 onClick={handleSaveLyricCard}
-                disabled={savingCard}
+                disabled={savingCard || cardLoading}
                 className="reveal-action-btn"
               >
                 {savingCard ? "正在生成歌词卡…" : "保存歌词卡"}
