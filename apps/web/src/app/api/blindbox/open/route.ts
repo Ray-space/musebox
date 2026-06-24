@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCuratedScenario } from "@/lib/curated-scenarios";
 import {
   buildCompactMusicPrompt,
-  buildFastLyricsForMusic,
+  buildLyricsPackage,
   buildOpenCopyFast,
-  splitDisplayLyrics,
+  generateSongLyrics,
 } from "@/lib/mood-engine";
+import { buildLyricStartFractions, assignDefaultSections } from "@/lib/lyric-sync";
 import { generateMiniMaxMusicWithRetry } from "@/lib/minimax-music";
 import {
   getMusicGenerationTimeoutMs,
@@ -18,6 +19,26 @@ import type { BlindBox, MomentAnalysis, Song } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 
 export const maxDuration = 300;
+
+const LYRICS_TIMEOUT_MS = 22_000;
+
+async function resolveLyricsWithTimeout(
+  analysis: MomentAnalysis,
+  strategy: BlindBox["strategy"],
+  boxCopy: string,
+) {
+  try {
+    return await Promise.race([
+      generateSongLyrics(analysis, strategy, boxCopy),
+      new Promise<undefined>((resolve) => {
+        setTimeout(() => resolve(undefined), LYRICS_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (error) {
+    console.warn("[blindbox/open] generateSongLyrics failed:", error);
+    return undefined;
+  }
+}
 
 function buildLibraryPayload(
   box: BlindBox,
@@ -62,15 +83,13 @@ export async function POST(request: NextRequest) {
       forceLibrary && scenario
         ? scenario.openCopy
         : buildOpenCopyFast(analysis, box.strategy, box.copy);
-    const fastLyrics = buildFastLyricsForMusic(analysis, box.strategy, box.copy);
-    const displayLyrics =
-      forceLibrary && scenario
-        ? scenario.displayLyrics
-        : splitDisplayLyrics(
-            openCopy,
-            fastLyrics,
-            analysis?.text || analysis?.summary,
-          );
+
+    const curatedDisplayLyrics =
+      forceLibrary && scenario ? scenario.displayLyrics : undefined;
+    const curatedLyricTimings =
+      curatedDisplayLyrics && curatedDisplayLyrics.length > 0
+        ? buildLyricStartFractions(assignDefaultSections(curatedDisplayLyrics.length))
+        : undefined;
 
     if (forceLibrary || !shouldTryGenerate()) {
       const curated = forceLibrary && scenario;
@@ -88,7 +107,8 @@ export async function POST(request: NextRequest) {
           songForPayload,
           openCopy,
         ),
-        displayLyrics,
+        displayLyrics: curatedDisplayLyrics,
+        lyricTimings: curatedLyricTimings,
         boxCopy: curated ? scenario.tagline : box.copy,
         isCurated: Boolean(curated),
       });
@@ -102,9 +122,21 @@ export async function POST(request: NextRequest) {
         box.timbre,
       );
 
+      const llmLyrics = await resolveLyricsWithTimeout(
+        analysis,
+        box.strategy,
+        box.copy,
+      );
+      const lyricsPackage = buildLyricsPackage(
+        analysis,
+        box.strategy,
+        box.copy,
+        llmLyrics,
+      );
+
       const generated = await generateMiniMaxMusicWithRetry({
         prompt: musicPrompt,
-        lyrics: fastLyrics,
+        lyrics: lyricsPackage.structuredForMusic,
         strategy: box.strategy,
         lyricsOptimizer: false,
         timeoutMs: getMusicGenerationTimeoutMs(),
@@ -134,11 +166,8 @@ export async function POST(request: NextRequest) {
         boxCopy: box.copy,
         openCopy,
         song,
-        displayLyrics: splitDisplayLyrics(
-          openCopy,
-          fastLyrics,
-          analysis?.text || analysis?.summary,
-        ),
+        displayLyrics: lyricsPackage.displayLines,
+        lyricTimings: lyricsPackage.lyricTimings,
         momentText: analysis?.summary || analysis?.text || "今天的一个瞬间",
         imageDataUrl: analysis?.imageDataUrl,
         strategy: box.strategy,

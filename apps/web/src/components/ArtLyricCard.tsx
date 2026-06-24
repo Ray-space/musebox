@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { forwardRef, useMemo } from "react";
 import { LyricFocusScroller } from "@/components/LyricFocusScroller";
 import { buildMoodIntro } from "@/lib/lyric-card-context";
+import { resolveActiveLyricIndex } from "@/lib/lyric-sync";
 import { dedupeLyricLines } from "@/lib/mood-engine";
 
 export interface ArtLyricCardProps {
@@ -15,6 +16,7 @@ export interface ArtLyricCardProps {
   imageDataUrl?: string;
   playing: boolean;
   progress?: number;
+  lyricTimings?: number[];
   entered?: boolean;
   curated?: boolean;
 }
@@ -36,6 +38,7 @@ export const ArtLyricCard = forwardRef<HTMLDivElement, ArtLyricCardProps>(
       imageDataUrl,
       playing,
       progress = 0,
+      lyricTimings,
       entered = true,
       curated = false,
     },
@@ -59,11 +62,14 @@ export const ArtLyricCard = forwardRef<HTMLDivElement, ArtLyricCardProps>(
 
     const featuredIndex = useMemo(() => {
       if (!playing || displayLyrics.length === 0) return 0;
+      if (lyricTimings?.length) {
+        return resolveActiveLyricIndex(progress, lyricTimings);
+      }
       return Math.min(
         displayLyrics.length - 1,
         Math.floor(progress * displayLyrics.length),
       );
-    }, [playing, progress, displayLyrics.length]);
+    }, [playing, progress, displayLyrics.length, lyricTimings]);
 
     if (hasPhoto) {
       return (
@@ -198,6 +204,7 @@ export const ArtLyricCard = forwardRef<HTMLDivElement, ArtLyricCardProps>(
               lines={displayLyrics}
               playing={playing}
               progress={progress}
+              lyricTimings={lyricTimings}
               variant="default"
             />
           </motion.div>

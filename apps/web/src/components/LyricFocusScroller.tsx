@@ -2,11 +2,13 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { resolveActiveLyricIndex } from "@/lib/lyric-sync";
 
 interface LyricFocusScrollerProps {
   lines: string[];
   playing: boolean;
   progress?: number;
+  lyricTimings?: number[];
   variant?: "default" | "photo";
 }
 
@@ -59,6 +61,7 @@ export function LyricFocusScroller({
   lines,
   playing,
   progress = 0,
+  lyricTimings,
   variant = "default",
 }: LyricFocusScrollerProps) {
   const reduceMotion = useReducedMotion();
@@ -67,7 +70,9 @@ export function LyricFocusScroller({
   const [trackOffset, setTrackOffset] = useState(0);
 
   const activeIndex = playing
-    ? Math.min(lines.length - 1, Math.floor(progress * lines.length))
+    ? lyricTimings?.length
+      ? resolveActiveLyricIndex(progress, lyricTimings)
+      : Math.min(lines.length - 1, Math.floor(progress * lines.length))
     : -1;
 
   useEffect(() => {
@@ -104,7 +109,7 @@ export function LyricFocusScroller({
           transition={
             reduceMotion
               ? { duration: 0 }
-              : { duration: 0.95, ease: [0.22, 1, 0.36, 1] }
+              : { duration: 0.42, ease: [0.22, 1, 0.36, 1] }
           }
         >
           {lines.map((line, index) => {
@@ -128,7 +133,7 @@ export function LyricFocusScroller({
                 transition={
                   reduceMotion
                     ? { duration: 0 }
-                    : { duration: 0.85, ease: [0.22, 1, 0.36, 1] }
+                    : { duration: 0.38, ease: [0.22, 1, 0.36, 1] }
                 }
               >
                 {formatLyricLine(line, index, activeIndex, playing)}

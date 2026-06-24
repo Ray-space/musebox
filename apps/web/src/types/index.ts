@@ -78,6 +78,7 @@ export interface OpenResult {
   momentText: string;
   imageDataUrl?: string;
   displayLyrics?: string[];
+  lyricTimings?: number[];
   timbre?: TimbreProfile;
   strategy?: Strategy;
   isCurated?: boolean;

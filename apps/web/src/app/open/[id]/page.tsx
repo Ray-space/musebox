@@ -72,6 +72,7 @@ export default function OpenPage() {
           momentText?: string;
           imageDataUrl?: string;
           displayLyrics?: string[];
+          lyricTimings?: number[];
           timbre?: TimbreProfile;
           strategy?: Strategy;
           isCurated?: boolean;
@@ -89,6 +90,7 @@ export default function OpenPage() {
           momentText: data.momentText || analysis?.summary || analysis?.text || "今天的一个瞬间",
           imageDataUrl: data.imageDataUrl,
           displayLyrics: data.displayLyrics,
+          lyricTimings: data.lyricTimings,
           timbre: data.timbre || box.timbre,
           strategy: data.strategy || box.strategy,
           isCurated: data.isCurated === true,

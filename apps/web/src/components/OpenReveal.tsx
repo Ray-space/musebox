@@ -6,6 +6,7 @@ import { ArtLyricCard } from "@/components/ArtLyricCard";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { BoxOpenAnimation } from "@/components/BoxOpenAnimation";
 import { splitDisplayLyrics } from "@/lib/mood-engine";
+import { assignDefaultSections, buildLyricStartFractions } from "@/lib/lyric-sync";
 import { buildMoodIntro } from "@/lib/lyric-card-context";
 import { captureLyricCard, downloadDataUrl } from "@/lib/visual-card";
 import { resolvePlaybackSrc } from "@/lib/resolve-audio-src";
@@ -43,15 +44,21 @@ export function OpenReveal({ data }: OpenRevealProps) {
   );
 
   const lyrics = useMemo(() => {
-    if (isCurated && data.displayLyrics?.length) {
+    if (data.displayLyrics?.length) {
       return data.displayLyrics;
     }
-    return splitDisplayLyrics(
-      data.openCopy,
-      data.displayLyrics?.join("\n"),
-      data.momentText,
-    );
-  }, [data.displayLyrics, data.openCopy, data.momentText, isCurated]);
+    return splitDisplayLyrics(data.openCopy);
+  }, [data.displayLyrics, data.openCopy]);
+
+  const lyricTimings = useMemo(() => {
+    if (data.lyricTimings?.length) {
+      return data.lyricTimings;
+    }
+    if (lyrics.length > 0) {
+      return buildLyricStartFractions(assignDefaultSections(lyrics.length));
+    }
+    return undefined;
+  }, [data.lyricTimings, lyrics.length]);
 
   const albumCaptureData = useMemo(() => {
     if (!hasPhoto) return undefined;
@@ -216,6 +223,7 @@ export function OpenReveal({ data }: OpenRevealProps) {
                     imageDataUrl={data.imageDataUrl}
                     playing={isPlaying}
                     progress={audioProgress}
+                    lyricTimings={lyricTimings}
                     entered={cardEntered}
                     curated={isCurated}
                   />

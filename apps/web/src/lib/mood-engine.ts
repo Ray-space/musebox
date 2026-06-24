@@ -5,7 +5,21 @@ import {
   hasOpenAITextKey,
   parseJsonContent,
 } from "@/lib/minimax-text";
+import {
+  assignDefaultSections,
+  buildLyricStartFractions,
+  parseLyricText,
+  toMiniMaxLyrics,
+  type LyricSection,
+} from "@/lib/lyric-sync";
 import type { MomentAnalysis, Strategy, TimbreProfile } from "@/types";
+
+export interface LyricsPackage {
+  displayLines: string[];
+  structuredForMusic: string;
+  sections: LyricSection[];
+  lyricTimings: number[];
+}
 
 interface SceneRule {
   keywords: string[];
@@ -142,11 +156,60 @@ const OPEN_COPY_SYSTEM_PROMPT =
   '你是「MuseBox灵感音匣」开盒文案写手。根据用户瞬间（文字与可选图片）写2句诗意短句作为歌词卡片文案，不煽情、不鸡汤。输出 JSON：{"line1":"","line2":""}';
 
 const SONG_LYRICS_SYSTEM_PROMPT =
-  '你是中文流行歌曲作词人。歌词必须紧扣：用户原始文字、图片氛围、以及用户选中的音匣提示语。总时长适合60-90秒演唱，结构为 [Verse][Chorus][Verse][Chorus]，可见歌词至少5行、最多8行（不含段落标签），每行不超过12字，注重押韵与旋律感，禁止念白朗诵。输出 JSON：{"lyrics":"完整歌词"}';
+  '你是中文流行歌曲作词人。歌词必须紧扣：用户原始文字、图片氛围、以及用户选中的音匣提示语。总时长适合60-90秒演唱。输出 JSON：{"lyrics":"完整歌词"}。格式示例：[Verse]\\n完整句1\\n完整句2\\n[Chorus]\\n完整句3\\n完整句4\\n[Verse]\\n完整句5\\n[Chorus]\\n完整句6。要求：可见歌词5-8行（不含段落标签）；每行8-12个汉字且必须是语义完整的句子，禁止截断半句话或硬拼片段；至少两组句末押韵；口语自然、可演唱，禁止朗诵腔和病句。';
 
 function trimCopy(text: string, max = 15): string {
   const chars = Array.from(text.trim());
   return chars.slice(0, max).join("");
+}
+
+function trimLyricLine(text: string, max = 12): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  const chars = Array.from(trimmed);
+  if (chars.length <= max) return trimmed;
+
+  const sliced = chars.slice(0, max).join("");
+  const punctIndex = Math.max(
+    sliced.lastIndexOf("，"),
+    sliced.lastIndexOf("。"),
+    sliced.lastIndexOf("、"),
+    sliced.lastIndexOf("；"),
+  );
+
+  if (punctIndex >= 4) {
+    return sliced.slice(0, punctIndex).replace(/[，。、；]$/, "");
+  }
+
+  return sliced;
+}
+
+function pickUniqueLines(candidates: string[], minLines: number, maxLines: number): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const raw of candidates) {
+    const line = trimLyricLine(raw);
+    if (!line || line.length < 4) continue;
+    const key = line.replace(/\s+/g, "");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(line);
+    if (result.length >= maxLines) break;
+  }
+
+  while (result.length < minLines && candidates.length > 0) {
+    const fallback = trimLyricLine(candidates[result.length % candidates.length]);
+    const key = fallback.replace(/\s+/g, "");
+    if (fallback && !seen.has(key)) {
+      seen.add(key);
+      result.push(fallback);
+    } else {
+      break;
+    }
+  }
+
+  return result;
 }
 
 function trimTitle(text: string, max = 12): string {
@@ -575,40 +638,65 @@ export function dedupeLyricLines(lines: string[]): string[] {
 export function splitDisplayLyrics(
   openCopy: [string, string],
   fullLyrics?: string,
-  momentText?: string,
 ): string[] {
   const minLines = 5;
   const maxLines = 8;
 
   let lines: string[] = [];
   if (fullLyrics?.trim()) {
-    lines = fullLyrics
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line && !/^\[.+\]$/.test(line));
+    lines = parseLyricText(fullLyrics).lines;
   }
 
   if (lines.length === 0) {
-    lines = openCopy.filter(Boolean);
+    lines = openCopy.filter(Boolean).map((line) => trimLyricLine(line));
   }
 
   lines = dedupeLyricLines(lines);
 
-  const pool = dedupeLyricLines([
-    ...openCopy,
-    ...(momentText
-      ? momentText.split(/[，。；、\s]+/).filter((s) => s.length >= 2)
-      : []),
-  ]);
-
-  for (const candidate of pool) {
-    if (lines.length >= minLines) break;
-    const key = candidate.replace(/\s+/g, "");
-    if (lines.some((line) => line.replace(/\s+/g, "") === key)) continue;
-    lines.push(candidate);
+  if (lines.length < minLines) {
+    for (const candidate of openCopy) {
+      if (lines.length >= minLines) break;
+      const line = trimLyricLine(candidate);
+      const key = line.replace(/\s+/g, "");
+      if (!line || lines.some((item) => item.replace(/\s+/g, "") === key)) continue;
+      lines.push(line);
+    }
   }
 
   return dedupeLyricLines(lines).slice(0, maxLines);
+}
+
+export function buildLyricsPackage(
+  analysis: MomentAnalysis,
+  strategy: Strategy,
+  boxCopy: string | undefined,
+  llmLyrics?: string,
+): LyricsPackage {
+  const openCopy = buildOpenCopyFast(analysis, strategy, boxCopy || "");
+  const rawLyrics = llmLyrics?.trim() || buildFastLyricsForMusic(analysis, strategy, boxCopy);
+  const parsed = parseLyricText(rawLyrics);
+  let displayLines = parsed.lines.length > 0 ? parsed.lines : splitDisplayLyrics(openCopy, rawLyrics);
+  displayLines = dedupeLyricLines(displayLines).slice(0, 8);
+
+  if (displayLines.length < 5) {
+    displayLines = pickUniqueLines(
+      [...displayLines, ...openCopy, ...(analysis.lyrics_hint ? [analysis.lyrics_hint] : [])],
+      5,
+      8,
+    );
+  }
+
+  const sections =
+    parsed.lines.length === displayLines.length
+      ? parsed.sections.slice(0, displayLines.length)
+      : assignDefaultSections(displayLines.length);
+
+  return {
+    displayLines,
+    structuredForMusic: toMiniMaxLyrics(displayLines, sections),
+    sections,
+    lyricTimings: buildLyricStartFractions(sections),
+  };
 }
 
 export async function generateSongLyrics(
@@ -671,7 +759,7 @@ export function buildOpenCopyFast(
   return [boxCopy.trim() || line2, line2];
 }
 
-/** 开盒快速路径：用分析阶段的 lyrics_hint 拼紧凑歌词，交给 MiniMax 优化 */
+/** 开盒 fallback：按标点取完整句，避免 mid-char 截断 */
 export function buildFastLyricsForMusic(
   analysis: MomentAnalysis,
   _strategy: Strategy,
@@ -679,30 +767,17 @@ export function buildFastLyricsForMusic(
 ): string {
   const fragments = extractTextFragments(analysis.text || analysis.summary);
   const hint = analysis.lyrics_hint?.trim();
-  const title = analysis.song_title?.trim() || fragments[0] || "此刻";
+  const summary = analysis.summary?.trim();
+  const copy = boxCopy?.trim();
 
-  const verse1 = (boxCopy?.trim() || fragments[0] || hint || title).slice(
-    0,
-    14,
-  );
-  const verse2 = (fragments[1] || hint || analysis.summary?.slice(0, 12) || title).slice(
-    0,
-    14,
-  );
-  const chorus1 = (hint || title).slice(0, 14);
-  const chorus2 = (analysis.summary?.slice(0, 12) || fragments[0] || title).slice(
-    0,
-    14,
+  const candidates = dedupeLyricLines(
+    [copy, ...fragments, hint, summary].filter(Boolean) as string[],
   );
 
-  return [
-    "[Verse]",
-    verse1,
-    verse2,
-    "[Chorus]",
-    chorus1,
-    chorus2,
-  ].join("\n");
+  const lines = pickUniqueLines(candidates, 5, 6);
+  const sections = assignDefaultSections(lines.length);
+
+  return toMiniMaxLyrics(lines, sections);
 }
 
 function getStrategyLabel(strategy: Strategy): string {
