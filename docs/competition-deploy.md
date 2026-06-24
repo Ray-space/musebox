@@ -64,6 +64,25 @@ https://<你的项目名>.vercel.app/demo
 4. Root Directory 设为 `apps/web`
 5. 手动粘贴环境变量后 Deploy
 
+## 腾讯云云托管部署
+
+构建设置（与 Dockerfile 同级）：
+
+| 配置项 | 值 |
+|--------|-----|
+| **目标目录** | `apps/web` |
+| **Dockerfile 文件** | 有 |
+| **Dockerfile 名称** | `Dockerfile` |
+| **服务端口** | `3000` |
+
+环境变量同 Vercel（见上表）。仓库根目录也有 Dockerfile（目标目录填 `.` 时使用）。
+
+修改根目录 `content/songs.json` 后，部署前在 `apps/web` 执行：
+
+```bash
+npm run sync:content
+```
+
 ## 音频保底（强烈建议）
 
 当前 `content/audio/` 若无 MP3，生曲失败时评委听不到音乐。

@@ -11,6 +11,7 @@
     "check:env": "node scripts/check-env.mjs",
     "test:realtime": "node scripts/test-realtime-flow.mjs",
     "sync:audio": "node scripts/sync-audio.mjs",
+    "sync:content": "node scripts/sync-content.mjs",
     "deploy:demo": "vercel --prod",
     "deploy:competition": "node scripts/deploy-competition.mjs",
     "demo:tunnel": "npx localtunnel --port 3000"
