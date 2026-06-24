@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MusicGeneratingScene } from "@/components/MusicGeneratingScene";
 import { OpenReveal } from "@/components/OpenReveal";
+import { readJsonResponse } from "@/lib/fetch-json";
 import { loadSelected } from "@/lib/storage";
-import type { BlindBox, OpenResult } from "@/types";
+import type { BlindBox, OpenResult, Strategy, TimbreProfile } from "@/types";
 
 type OpenPhase = "generating" | "ready" | "error" | "missing";
 
@@ -62,7 +63,19 @@ export default function OpenPage() {
       body: JSON.stringify({ box, analysis, forceLibrary, scenarioId }),
     })
       .then(async (res) => {
-        const data = await res.json();
+        const data = await readJsonResponse<{
+          error?: string;
+          boxId: string;
+          boxCopy?: string;
+          openCopy: [string, string];
+          song: OpenResult["song"];
+          momentText?: string;
+          imageDataUrl?: string;
+          displayLyrics?: string[];
+          timbre?: TimbreProfile;
+          strategy?: Strategy;
+          isCurated?: boolean;
+        }>(res);
         if (!res.ok) throw new Error(data.error || "开盒失败");
         return data;
       })
@@ -73,7 +86,7 @@ export default function OpenPage() {
           openCopy: data.openCopy,
           song: data.song,
           visualCardDataUrl: "",
-          momentText: data.momentText,
+          momentText: data.momentText || analysis?.summary || analysis?.text || "今天的一个瞬间",
           imageDataUrl: data.imageDataUrl,
           displayLyrics: data.displayLyrics,
           timbre: data.timbre || box.timbre,

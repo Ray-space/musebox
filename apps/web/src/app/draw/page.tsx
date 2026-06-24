@@ -9,6 +9,7 @@ import {
   type CuratedScenarioId,
 } from "@/lib/curated-scenarios";
 import { drawBlindBoxes } from "@/lib/blindbox-match";
+import { readJsonResponse } from "@/lib/fetch-json";
 import {
   clearPendingMoment,
   loadPendingMoment,
@@ -88,7 +89,9 @@ export default function DrawPage() {
       }),
     })
       .then(async (response) => {
-        const payload = await response.json();
+        const payload = await readJsonResponse<{ error?: string } & DrawResult>(
+          response,
+        );
         if (!response.ok) {
           throw new Error(payload.error || "生成盲盒失败");
         }
