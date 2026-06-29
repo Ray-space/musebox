@@ -289,7 +289,7 @@ export function AudioPlayer({
               <span className="reveal-vinyl-grooves" />
               <span className="reveal-vinyl-shine" />
               <span className="reveal-vinyl-label">
-                <span>{songTitle?.slice(0, 4) || "未音"}</span>
+                <span>{songTitle?.slice(0, 4) || "音匣"}</span>
               </span>
               <span className="reveal-vinyl-hole" />
             </span>
@@ -326,7 +326,7 @@ export function AudioPlayer({
         {errorHint}
         {useSynth && playing && (
           <p className="text-[11px] text-dream-mist/35">
-            Demo 合成音 · 替换未音 MP3 后可播放完整歌曲
+            Demo 合成音 · 曲库 MP3 可播放完整歌曲
           </p>
         )}
       </div>
@@ -355,7 +355,7 @@ export function AudioPlayer({
             {playbackError
               ? playbackError
               : useSynth
-                ? "Demo 合成音（替换为未音导出 MP3 后可播放完整歌曲）"
+                ? "Demo 合成音（曲库 MP3 可播放完整歌曲）"
                 : loading
                   ? "正在加载音频…"
                   : playing

@@ -1,1 +1,1 @@
-Place exported VEMUS MP3 files here. Filename must match song id in content/songs.json.
+Place MP3 files here (filename must match song id in content/songs.json). Run `npm run sync:audio` from apps/web to copy from content/audio/.

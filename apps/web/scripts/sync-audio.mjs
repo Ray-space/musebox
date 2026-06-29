@@ -19,7 +19,7 @@ const mp3Files = readdirSync(sourceDir).filter((name) =>
 
 if (mp3Files.length === 0) {
   console.log("content/audio/ 中暂无 MP3。");
-  console.log("请按 docs/vemus-prompts.md 在未音生成后导出到 content/audio/，再运行本命令。");
+  console.log("将 MP3 放入 content/audio/ 后运行 npm run sync:audio 同步到 public/audio/。");
   process.exit(0);
 }
 

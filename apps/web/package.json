@@ -13,7 +13,6 @@
     "sync:audio": "node scripts/sync-audio.mjs",
     "sync:content": "node scripts/sync-content.mjs",
     "deploy:demo": "vercel --prod",
-    "deploy:competition": "node scripts/deploy-competition.mjs",
     "demo:tunnel": "npx localtunnel --port 3000"
   },
   "dependencies": {

@@ -2,5 +2,5 @@
   <rect width="512" height="512" rx="120" fill="#0a0a0f"/>
   <circle cx="256" cy="220" r="88" fill="#7eb8da" opacity="0.85"/>
   <rect x="156" y="300" width="200" height="120" rx="36" fill="#f4a261" opacity="0.9"/>
-  <text x="256" y="455" text-anchor="middle" fill="#ffffff" font-size="42" font-family="sans-serif">未音</text>
+  <text x="256" y="455" text-anchor="middle" fill="#ffffff" font-size="42" font-family="sans-serif">音匣</text>
 </svg>

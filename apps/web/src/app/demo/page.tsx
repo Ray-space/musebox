@@ -46,7 +46,7 @@ export default function DemoPage() {
     <AppShell>
       <div className="demo-page">
         <header className="demo-header">
-          <p className="demo-eyebrow">未音 · 时刻音乐盲盒</p>
+          <p className="demo-eyebrow">MuseBox · 灵感音匣</p>
           <h1 className="demo-title">MuseBox灵感音匣 · 体验 Demo</h1>
           <p className="demo-desc">
             写+拍 → 抽 → 看+听。选一个场景，进入完整交互流程。
